@@ -13,6 +13,8 @@ import android.os.Bundle
 import android.provider.Settings
 import android.widget.Toast
 import androidx.activity.ComponentActivity
+import androidx.activity.result.ActivityResult
+import androidx.activity.result.ActivityResultCallback
 import androidx.activity.result.ActivityResultLauncher
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.core.app.ActivityCompat
@@ -39,12 +41,26 @@ class MainActivity : ComponentActivity() {
 
     private val PERMISSION_REQUEST_CODE = 100
 
+    var latitude : Double? = 0.0
+    var longitude : Double? = 0.0
+
     private val REQUIRED_PERMISSIONS = arrayOf(
         Manifest.permission.ACCESS_FINE_LOCATION,
         Manifest.permission.ACCESS_COARSE_LOCATION
     )
 
     private lateinit var getGPSPermissionLauncher: ActivityResultLauncher<Intent>
+
+    val startMapActivityResult = registerForActivityResult(ActivityResultContracts.StartActivityForResult(),
+        object : ActivityResultCallback<ActivityResult>{
+            override fun onActivityResult(result: ActivityResult) {
+                if(result.resultCode?: Activity.RESULT_CANCELED == Activity.RESULT_OK){
+                    latitude = result.data?.getDoubleExtra("latitude",0.0) ?: 0.0
+                    longitude = result.data?.getDoubleExtra("longitude",0.0) ?: 0.0
+                    updateUI()
+                }
+            }
+        })
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -54,7 +70,18 @@ class MainActivity : ComponentActivity() {
         checkAllPermissions()
         updateUI()
         setRefreshButton()
+        setFab()
     }
+
+    private fun setFab() {
+        binding.fab.setOnClickListener {
+            val intent = Intent(this, MapActivity::class.java)
+            intent.putExtra("currentLat", latitude)
+            intent.putExtra("currentLng", longitude)
+            startMapActivityResult.launch(intent)
+        }
+    }
+
 
     private fun setRefreshButton() {
         binding.btnRefresh.setOnClickListener {
@@ -64,19 +91,18 @@ class MainActivity : ComponentActivity() {
 
     private fun updateUI() {
         locationProvider = LocationProvider(this@MainActivity)
-        val latitude: Double? = locationProvider.getLocationLatitude()
-        val longitude: Double? = locationProvider.getLocationLongitude()
+        if(latitude == 0.0 && longitude == 0.0) {
+            latitude = locationProvider.getLocationLatitude()
+            longitude = locationProvider.getLocationLongitude()
+        }
         if (latitude != null && longitude != null) {
-            //현 위치 가져오기 + UI 업데이트
-            val address = getCurrentAddress(latitude, longitude)
+            val address = getCurrentAddress(latitude!!, longitude!!)
             address?.let {
                 binding.tvLocationTitle.text = it.thoroughfare
                 binding.tvLocationSubtitle.text = "${it.countryName} ${it.adminArea}"
             }
 
-            //미세먼지 농도 가져오고 UI 업데이트
-
-            getAirQualityData(latitude, longitude)
+            getAirQualityData(latitude!!, longitude!!)
         } else {
             Toast.makeText(this, getString(R.string.geo_load_fail), Toast.LENGTH_LONG).show()
         }
@@ -125,7 +151,6 @@ class MainActivity : ComponentActivity() {
             }
         )
 
-        // execute() == 동기실행 enqueue() == 비동기실행
     }
 
     private fun updateAirUI(response: AirQualityResponse) {
@@ -249,7 +274,6 @@ class MainActivity : ComponentActivity() {
             }
 
             if (checkResult) {
-                //위치 가져오기
                 updateUI()
             } else {
                 Toast.makeText(

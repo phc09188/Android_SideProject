@@ -1,5 +1,13 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-
-    <style name="Theme.AirQuality" parent="android:Theme.Material.Light.NoActionBar" />
+    <style name="Theme.AirQuality" parent="Theme.AppCompat.Light.DarkActionBar">
+        <!-- Customize your theme here. -->
+        <item name="colorPrimary">#489CFF</item>
+        <item name="colorPrimaryDark">#489CFF</item>
+        <item name="colorAccent">#489CFF</item>
+    </style>
+<!--    <style name="Theme.AirQuality" parent="android:Theme.Material.Light.DarkActionBar" >-->
+<!--        <item name="cornerFamily">cut</item>-->
+<!--        <item name="cornerSize">16dp</item>-->
+<!--    </style>-->
 </resources>
